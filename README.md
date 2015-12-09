@@ -172,7 +172,7 @@ struct SNeuron
 This is very simple, we just need to keep a record of how many inputs there are into each neuron and a std::vector of doubles in which we will store all the weights. Remember, there's a weight for every input into the neuron. When a SNeuron object is created, all the weights are initialized with random values.
 
 <div style="width:40%; margin:auto; margin-bottom:10px; margin-top:20px;">
-<img style="width:100%" src="images/program_note.jpg">
+<img style="width:100%" src="images/program_note.gif">
 </div>
 
 This is the constructor for SNeuron:
