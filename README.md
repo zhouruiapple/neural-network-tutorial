@@ -1,6 +1,6 @@
 # neural-network-tutorial
 
-![logo](images/logo.png)
+![logo](images/logo.jpg)
 
 ## Introduction
  
