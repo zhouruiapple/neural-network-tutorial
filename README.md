@@ -47,14 +47,14 @@ Fortunately there is a quick way of writing this down which uses the Greek capit
 
 
 Maybe just to clarify what this means I should write it out in code. Assuming an array of inputs and weights are already initialized as x[n] and w[n] then:
-
+```code
 double activation = 0;
 
 for (int i=0; i<n; i++)
 {
    activation += x[i] * w[i];
 }
-
+```
 Got it? Now remember that if the activation > threshold we output a 1 and if activation < threshold we output a 0.
 
 Let me illustrate everything I've shown you so far with a diagram.
