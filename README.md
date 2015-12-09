@@ -423,3 +423,352 @@ After this method has checked  the validity of the input vector it enters a loop
 The other methods in CNeuralNet are used mainly by the genetic algorithm class to grab the weights from a network or to replace the weights of a network.
 
 
+## The CGenAlg Class
+
+This is the genetic algorithm class. If you followed my last tutorial you should have a good enough understanding of how they work. There is a difference with the CGenAlg class though because this time we are going to use vectors of real numbers instead of binary strings.
+
+The neural network is encoded by reading all the weights from left to right and from the first hidden layer upwards and storing them in a vector. So if a network looked like this:
+
+<div style="width:40%; margin:auto; margin-bottom:10px; margin-top:20px;">
+<img style="width:100%" src="images/network_weights.jpg">
+</div>
+
+The vector would be:   0.3, -0.8, -0.2, 0.6, 0.1, -0.1, 0.4, 0.5
+
+(note, this is not taking into account the bias, just the weights as shown)
+
+We can now use crossover and mutation as normal with one difference: the mutation rate for genetic algorithms using real numbers is much higher… a value of between 0.05 and 0.2 is recommended.
+
+Before I show you the definition of the CGenAlg class let me quickly show you the genome structure:
+
+struct SGenome
+
+{
+
+  vector <double>  vecWeights;
+
+
+
+  double           dFitness;
+
+
+
+  SGenome():dFitness(0){}
+
+
+
+  SGenome( vector <double> w, double f): vecWeights(w), dFitness(f){}
+
+
+
+  //overload '<' used for sorting
+
+  friend bool operator<(const SGenome& lhs, const SGenome& rhs)
+
+  {
+
+    return (lhs.dFitness < rhs.dFitness);
+
+  }
+
+};
+
+
+And now the CGenAlg class:
+
+class CGenAlg
+
+{
+
+private:
+
+  //this holds the entire population of chromosomes
+
+  vector <SGenome> m_vecPop;
+
+
+
+  //size of population
+
+  int m_iPopSize;
+
+
+
+  //amount of weights per chromo
+
+  int m_iChromoLength;
+
+
+
+  //total fitness of population
+
+  double m_dTotalFitness;
+
+
+
+  //best fitness this population
+
+  double m_dBestFitness;
+
+
+
+  //average fitness
+
+  double m_dAverageFitness;
+
+
+
+  //worst
+
+  double m_dWorstFitness;
+
+
+
+  //keeps track of the best genome
+
+  int m_iFittestGenome;
+
+
+
+  //probability that a chromosomes bits will mutate.
+
+  //Try figures around 0.05 to 0.3 ish
+
+  double m_dMutationRate;
+
+
+
+  //probability of chromosomes crossing over bits
+
+  //0.7 is pretty good
+
+  double m_dCrossoverRate;
+
+
+
+  //generation counter
+
+  int m_cGeneration;
+
+
+
+  void Crossover(const vector<double> &mum,
+
+                 const vector<double> &dad,
+
+                 vector<double>       &baby1,
+
+                 vector<double>       &baby2);
+
+
+
+  void Mutate(vector<double> &chromo);
+
+
+
+  SGenome GetChromoRoulette();
+
+
+
+  void GrabNBest(int             NBest,
+
+                 const int       NumCopies,
+
+                 vector<SGenome> &vecPop);
+
+
+
+  void CalculateBestWorstAvTot();
+
+
+
+  void Reset();
+
+
+
+public:
+
+  CGenAlg(int    popsize,
+
+          double MutRat,
+
+          double CrossRat,
+
+          int    numweights);
+
+
+
+  //this runs the GA for one generation.
+
+  vector<SGenome> Epoch(vector<SGenome> &old_pop);
+
+
+
+  //-------------------accessor methods
+
+  vector<SGenome> GetChromos()const{return m_vecPop;}
+
+  double AverageFitness()const{return m_dTotalFitness / m_iPopSize;}
+
+  double BestFitness()const{return m_dBestFitness;}
+
+};
+
+
+When a CGenAlg object is created, the number of weights in each minesweeper's neural net is passed to it, along with the total population size. The constructor initializes the entire population with random weights and then each chromosome is allocated to its respective minesweepers 'brain' using the method CNeuralNet::PutWeights.
+
+The minesweepers are then ready for action!
+
+
+## Putting it all together
+
+I'm not going into a detailed description of the CMineSweeper and CController classes because they should be easily understood from the comments within the code. I will include them in the tutorial however if enough people pester me. I will describe the main loop though, just so you know exactly what's going on in there. I have omitted some lines that are included in the actual source for clarity. The missing code just deals with cosmetic stuff like updating the graph display and other stats.
+
+bool CController::Update()
+{
+
+  //run the sweepers through CParams::iNumTicks amount of cycles. During
+
+  //this loop each sweeper's NN is constantly updated with the appropriate
+
+  //information from its surroundings. The output from the NN is obtained
+
+  //and the sweeper is moved. If it encounters a mine its fitness is
+
+  //updated appropriately,
+
+  if (m_iTicks++ < CParams::iNumTicks)
+
+  {
+
+    for (int i=0; i<m_NumSweepers; ++i)
+
+    {
+
+
+
+      //update the NN and position
+
+      if (!m_vecSweepers[i].Update(m_vecMines))
+
+      {
+
+        //error in processing the neural net
+
+        MessageBox(m_hwndMain, "Wrong amount of NN inputs!", "Error", MB_OK);
+
+        return false;
+
+      }
+
+
+
+      //see if it's found a mine
+
+      int GrabHit = m_vecSweepers[i].CheckForMine(m_vecMines, CParams::dMineScale);
+
+
+
+      if (GrabHit >= 0)
+
+      {
+
+        //we have discovered a mine so increase fitness
+
+        m_vecSweepers[i].IncrementFitness();
+
+
+
+       //mine found so replace the mine with another at a random
+
+       //position
+
+       m_vecMines[GrabHit] = SVector2D(RandFloat() * cxClient, RandFloat() * cyClient);
+
+      }
+
+
+
+      //update the fitness score
+
+      m_vecThePopulation[i].dFitness = m_vecSweepers[i].Fitness();
+
+    }
+
+  }
+
+
+This first part of the if statement runs all the minesweepers through one generation (one generation consists of CParams::iNumTicks amount of computer cycles) updating their neural nets and their positions accordingly. If a land-mine is found it is removed and that minesweeper's fitness score is increased by 1. The land-mine is then replaced by another at a randomly generated position.
+
+  //Another generation has been completed.
+  //Time to run the GA and update the sweepers with their new NNs
+
+  else
+
+  {
+
+    //increment the generation counter
+
+    ++m_iGenerations;
+
+
+
+    //reset cycles
+
+    m_iTicks = 0;
+
+
+
+    //run the GA to create a new population
+
+    m_vecThePopulation = m_pGA->Epoch(m_vecThePopulation);
+
+
+
+    //insert the new (hopefully)improved brains back into the sweepers
+
+    //and reset their positions etc
+
+    for (int i=0; i<m_NumSweepers; ++i)
+
+    {
+
+      m_vecSweepers[i].PutWeights(m_vecThePopulation[i].vecWeights);
+
+
+      m_vecSweepers[i].Reset();
+
+    }
+
+  }
+
+  return true;
+
+}
+
+
+The else statement kicks in at the end of every generation. It's this chunk of code which collates all the minesweepers chromosomes and fitness scores and sends the information to the genetic algorithm. The GA does its stuff, passes the new weights back which then get put into a new generation of minesweepers brains. Everything is reset and a new cycle is run as per the previous paragraph.
+
+This Update function loops endlessly until you decide the minesweepers have evolved interesting enough behaviour. This usually takes around fifty generations.
+
+Hitting the 'F' key when the program is running will put the program into accelerated time mode and you'll see a simple graph of the population's progress.
+
+
+Stuff to Try
+
+Evolve minesweepers that avoid the mines.
+
+Evolve minesweepers that pick up the mines but avoid another type of object. (not as easy as you think)
+
+When you've played around a little with the code the more observant of you will notice that the simple crossover operator used here is not very effective. Can you think why? Can you design a more effective crossover operator?
+
+It's possible to design the neural networks in a way that uses far fewer inputs and hidden neurons. How small can you make a network and yet still evolve effective behavior?
+
+
+And that’s all folks!
+
+I thought I was never going to get to the end of this but here we are at last! If any of you do anything interesting with neural nets after you have read this tutorial I would love to be informed. Please feel free to use my code in your own projects but I’d appreciate it if you give me credit where due.
+
+And most of all, have fun!
+
+If you have enjoyed (or not!) the tutorial please take a moment to comment or ask questions on the message board. Getting feedback from you makes the effort seem all the more worthwhile.
