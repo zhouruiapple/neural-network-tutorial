@@ -45,6 +45,9 @@ a = x1w1+x2w2+x3w3... +xnwn
 
 Fortunately there is a quick way of writing this down which uses the Greek capital letter sigma S, which is the symbol used by mathematicians to represent summation.
 
+<div style="width:40%; margin:auto; margin-bottom:10px; margin-top:20px;">
+<img style="width:100%" src="images/equation2.gif">
+</div>
 
 Maybe just to clarify what this means I should write it out in code. Assuming an array of inputs and weights are already initialized as x[n] and w[n] then:
 ```code
@@ -108,6 +111,9 @@ How is a neural net going to control the movement of a minesweeper? Well, just l
 
 The more thoughtful of you may be wondering how on earth we can apply varying forces when all we've discussed so far are binary networks outputting 1’s and 0’s. The secret to this is that instead of using a simple step (threshold) activation function we use one which softens the output of each neuron to produce a symmetrical curve. There are several functions which will do this and we are going to use one called the sigmoid function. (sigmoid, or sigmoidal is just a posh way of saying something is S shaped)
 
+<div style="width:40%; margin:auto; margin-bottom:10px; margin-top:20px;">
+<img style="width:100%" src="images/equation3.gif">
+</div>
 
 This equation may look intimidating to some of you but it’s very simple really. The e is a mathematical constant which approximates to 2.7183, the a is the activation into the neuron and p is a number which controls the shape of the curve. p is usually set to 1.0.
 
@@ -140,7 +146,7 @@ CParams is a class which loads in all the parameters for the application. They c
 ## The CNeuralNet class
 
 Let’s get started on the neural network class, CNeuralNet. We want this class to be flexible so it can be used in other projects and as simple to use as possible. We need to be able to set up a neural network with any amount of inputs and outputs and any amount of neurons in any amount of hidden layers.  So how do we do this? Well, first we need to define structures for a neuron and a neuron layer. Let’s have a look at the definition of these structures… first the neuron:
-
+```code
 struct SNeuron
 {
 
@@ -161,7 +167,7 @@ struct SNeuron
    SNeuron(int NumInputs);
 
 };
-
+```
 
 This is very simple, we just need to keep a record of how many inputs there are into each neuron and a std::vector of doubles in which we will store all the weights. Remember, there's a weight for every input into the neuron. When a SNeuron object is created, all the weights are initialized with random values.
 
@@ -170,7 +176,7 @@ This is very simple, we just need to keep a record of how many inputs there are 
 </div>
 
 This is the constructor for SNeuron:
-
+```code
 SNeuron::SNeuron(int NumInputs): m_NumInputs(NumInputs+1)
 {
 
@@ -187,7 +193,7 @@ SNeuron::SNeuron(int NumInputs): m_NumInputs(NumInputs+1)
   }
 
 }
-
+```
 
 This takes the number of inputs going into the neuron as an argument and creates a vector of random weights. One weight for each input.
 
@@ -208,7 +214,7 @@ So you can see (hopefully) that we can treat the threshold as a weight that is a
 And that's why each neuron is initialized with one additional weight. Because now when the network is evolved we don’t have to worry about the threshold value as it's built in with the weights and will take care of itself. Good eh?
 
 Lets get on with the rest of the neural net code… The next structure defines a layer of neurons.
-
+```code
 struct SNeuronLayer
 {
 
@@ -227,10 +233,10 @@ struct SNeuronLayer
   SNeuronLayer(int NumNeurons, int NumInputsPerNeuron);
 
 };
-
+```
 
 As you can see this just groups together a bunch of neurons into a layer. The CNeuralNet class is much more exciting, so let's move on and take a look at its definition:
-
+```code
 class CNeuralNet
 {
 
@@ -302,10 +308,10 @@ public:
   inline double Sigmoid(double activation, double response);
 
 };
-
+```
 
 Most of this should be self explanatory. The main work is done by the method Update. Here we pass in our inputs to the neural network as a std::vector of doubles and retrieve the output as another std::vector of doubles. This is really the only method we use after the CNeuralNetwork class has been initialized. We can just treat it as a black box, feeding it data and retrieving the output as if by magic. Let's take a closer look at this method:
-
+```code
 vector<double> CNeuralNet::Update(vector<double> &inputs)
 {
 
@@ -416,7 +422,7 @@ vector<double> CNeuralNet::Update(vector<double> &inputs)
   return outputs;
 
 }
-
+```
 
 After this method has checked  the validity of the input vector it enters a loop which examines each layer in turn. For each layer, it steps through the neurons in that layer and sums all the inputs multiplied by the corresponding weights. The last weight added in for each neuron is the bias (remember the bias is simply a weight always tied to the value -1.0).  This value is then put through the sigmoid function to give that neurons output and then added to a vector which is fed back into the next iteration of the loop and so on until we have our output proper.
 
@@ -440,7 +446,7 @@ The vector would be:   0.3, -0.8, -0.2, 0.6, 0.1, -0.1, 0.4, 0.5
 We can now use crossover and mutation as normal with one difference: the mutation rate for genetic algorithms using real numbers is much higher… a value of between 0.05 and 0.2 is recommended.
 
 Before I show you the definition of the CGenAlg class let me quickly show you the genome structure:
-
+```code
 struct SGenome
 
 {
@@ -472,10 +478,10 @@ struct SGenome
   }
 
 };
-
+```
 
 And now the CGenAlg class:
-
+```code
 class CGenAlg
 
 {
@@ -613,7 +619,7 @@ public:
   double BestFitness()const{return m_dBestFitness;}
 
 };
-
+```
 
 When a CGenAlg object is created, the number of weights in each minesweeper's neural net is passed to it, along with the total population size. The constructor initializes the entire population with random weights and then each chromosome is allocated to its respective minesweepers 'brain' using the method CNeuralNet::PutWeights.
 
@@ -623,7 +629,7 @@ The minesweepers are then ready for action!
 ## Putting it all together
 
 I'm not going into a detailed description of the CMineSweeper and CController classes because they should be easily understood from the comments within the code. I will include them in the tutorial however if enough people pester me. I will describe the main loop though, just so you know exactly what's going on in there. I have omitted some lines that are included in the actual source for clarity. The missing code just deals with cosmetic stuff like updating the graph display and other stats.
-
+```code
 bool CController::Update()
 {
 
@@ -696,10 +702,10 @@ bool CController::Update()
     }
 
   }
-
+```
 
 This first part of the if statement runs all the minesweepers through one generation (one generation consists of CParams::iNumTicks amount of computer cycles) updating their neural nets and their positions accordingly. If a land-mine is found it is removed and that minesweeper's fitness score is increased by 1. The land-mine is then replaced by another at a randomly generated position.
-
+```code
   //Another generation has been completed.
   //Time to run the GA and update the sweepers with their new NNs
 
@@ -745,7 +751,7 @@ This first part of the if statement runs all the minesweepers through one genera
   return true;
 
 }
-
+```
 
 The else statement kicks in at the end of every generation. It's this chunk of code which collates all the minesweepers chromosomes and fitness scores and sends the information to the genetic algorithm. The GA does its stuff, passes the new weights back which then get put into a new generation of minesweepers brains. Everything is reset and a new cycle is run as per the previous paragraph.
 
@@ -754,7 +760,7 @@ This Update function loops endlessly until you decide the minesweepers have evol
 Hitting the 'F' key when the program is running will put the program into accelerated time mode and you'll see a simple graph of the population's progress.
 
 
-Stuff to Try
+## Stuff to Try
 
 Evolve minesweepers that avoid the mines.
 
@@ -765,7 +771,7 @@ When you've played around a little with the code the more observant of you will 
 It's possible to design the neural networks in a way that uses far fewer inputs and hidden neurons. How small can you make a network and yet still evolve effective behavior?
 
 
-And that’s all folks!
+## And that’s all folks!
 
 I thought I was never going to get to the end of this but here we are at last! If any of you do anything interesting with neural nets after you have read this tutorial I would love to be informed. Please feel free to use my code in your own projects but I’d appreciate it if you give me credit where due.
 
